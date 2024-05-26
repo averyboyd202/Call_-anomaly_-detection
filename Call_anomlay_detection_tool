@@ -1,0 +1,37 @@
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+# Load call data
+call_data = pd.read_csv('call_data.csv')
+
+# Fill missing values, if any
+call_data.fillna(method='ffill', inplace=True)
+
+# Select relevant features for anomaly detection
+features = ['call_type', 'software_version', 'resolved', 'escalation', 'repeat_caller', 'category', 'subcategory']
+
+# Convert categorical features to numerical values
+call_data_encoded = pd.get_dummies(call_data[features], drop_first=True)
+
+# Standardize the features
+scaler = StandardScaler()
+call_data_scaled = scaler.fit_transform(call_data_encoded)
+
+# Initialize Isolation Forest model
+iso_forest = IsolationForest(contamination=0.01, random_state=42)  # 1% of data expected to be anomalies
+
+# Fit the model to the data
+iso_forest.fit(call_data_scaled)
+
+# Predict anomalies
+anomalies = iso_forest.predict(call_data_scaled)
+
+# Add predictions to the original data
+call_data['anomaly'] = anomalies
+
+# Filter out anomalies
+anomalies_data = call_data[call_data['anomaly'] == -1]
+
+# Display the anomalies
+print(anomalies_data)
